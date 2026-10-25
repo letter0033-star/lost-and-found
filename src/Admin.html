@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <?!= include('Styles'); ?>
+  <style>
+    .login-wrap { max-width: 420px; margin: 40px auto; padding: 26px 22px; }
+    .login-wrap h1 { margin: 0 0 4px; font-size: 22px; letter-spacing: -.4px; }
+    .stack { display: flex; flex-direction: column; gap: 14px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .grid2 { display: grid; grid-template-columns: 1fr; gap: 14px; }
+    @media (min-width: 720px) { .grid2 { grid-template-columns: 1fr 1fr; } .grid2 .full { grid-column: 1 / -1; } }
+
+    .tabs { display: flex; gap: 4px; overflow-x: auto; padding: 10px 0; scrollbar-width: none; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab { flex: none; height: 40px; padding: 0 14px; border-radius: 10px; border: 0; background: transparent; font-weight: 700; color: var(--muted); cursor: pointer; }
+    .tab[aria-selected="true"] { background: var(--ink); color: #fff; }
+    .tab .cnt { display: inline-block; min-width: 20px; padding: 0 6px; margin-left: 4px; border-radius: 999px; background: var(--accent); color: #3B2600; font-size: 12px; line-height: 20px; }
+    .section { padding-bottom: 40px; }
+    .section-title { display: flex; align-items: center; gap: 10px; margin: 6px 0 14px; }
+    .section-title h2 { margin: 0; font-size: 20px; letter-spacing: -.4px; flex: 1; }
+
+    .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 18px; }
+    @media (min-width: 720px) { .stats { grid-template-columns: repeat(6, 1fr); } }
+    .stat { text-align: left; padding: 14px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); cursor: pointer; }
+    .stat:hover { border-color: #CFC7B7; }
+    .stat .v { display: block; font-size: 28px; font-weight: 800; letter-spacing: -.5px; line-height: 1.15; }
+    .stat .l { font-size: 13px; color: var(--muted); font-weight: 700; }
+    .stat.warn { background: var(--accent-soft); border-color: #F1D9A5; }
+    .two { display: grid; grid-template-columns: 1fr; gap: 14px; }
+    @media (min-width: 900px) { .two { grid-template-columns: 1fr 1fr; } }
+
+    .list { display: flex; flex-direction: column; }
+    .li { display: flex; gap: 12px; align-items: center; padding: 10px 4px; border-bottom: 1px solid var(--line); cursor: pointer; }
+    .li:last-child { border-bottom: 0; }
+    .li:hover { background: var(--surface-2); }
+    .li .th { width: 56px; height: 56px; flex: none; border-radius: 10px; overflow: hidden; background: #EEEAE1; }
+    .li .th img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .li .main { flex: 1; min-width: 0; }
+    .li .t { font-weight: 800; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .li .s { font-size: 13px; color: var(--muted); }
+    .li .acts { display: flex; gap: 6px; flex: none; }
+    @media (max-width: 640px) { .li { flex-wrap: wrap; } .li .acts { width: 100%; padding-left: 68px; } }
+
+    .filters { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .filters .full { grid-column: 1 / -1; }
+    @media (min-width: 900px) { .filters { grid-template-columns: 2fr 1fr 1fr 1fr; } .filters .full { grid-column: auto; } }
+
+    .photo-box { display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
+    .photo-prev { width: 140px; height: 140px; border-radius: 12px; border: 2px dashed #D3CBBB; background: var(--surface-2); display: flex; align-items: center; justify-content: center; overflow: hidden; color: var(--faint); font-size: 13px; text-align: center; }
+    .photo-prev img { width: 100%; height: 100%; object-fit: cover; }
+    .quick { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+
+    .done { text-align: center; padding: 28px 20px; }
+    .done .ok { width: 64px; height: 64px; border-radius: 50%; background: var(--brand-soft); display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; }
+    .done .kv { max-width: 320px; margin: 16px auto; text-align: left; }
+
+    table.tbl { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .tbl th, .tbl td { padding: 9px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    .tbl th { font-size: 12.5px; color: var(--muted); font-weight: 700; background: var(--surface-2); position: sticky; top: 0; }
+    .tbl-wrap { overflow: auto; max-height: 70vh; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+    .idtag { font-family: ui-monospace, Menlo, Consolas, monospace; background: #F0EDE6; padding: 1px 7px; border-radius: 6px; font-weight: 700; font-size: 13px; white-space: nowrap; }
+    .detail-img { background: #111; border-radius: 12px; overflow: hidden; aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+    .detail-img img { width: 100%; height: 100%; object-fit: contain; }
+    .mini-hist { margin-top: 16px; }
+    .mini-hist h4 { margin: 0 0 6px; font-size: 14px; }
+    .mini-hist div { font-size: 13px; padding: 6px 0; border-top: 1px solid var(--line); }
+    .empty-note { padding: 28px; text-align: center; color: var(--muted); }
+    @media (max-width: 560px) { #meName { display: none !important; } .brand { font-size: 16px; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap">
+      <div class="brand">
+        <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9" fill="#1D2926"/><path d="M8 13.5 17 9l9 4.5v9L17 27l-9-4.5z" fill="#F0AE34"/><path d="M8 13.5 17 18l9-4.5M17 18v9" stroke="#1D2926" stroke-width="1.6" fill="none"/></svg>
+        <div><span class="js-school"><?= schoolName ?></span> 분실물 센터<small>관리자 화면</small></div>
+      </div>
+      <div class="spacer"></div>
+      <span id="meName" class="small muted hidden"></span>
+      <button id="btnLogout" class="btn btn-ghost btn-sm hidden" type="button">로그아웃</button>
+    </div>
+  </header>
+
+  <!-- 관리자 로그인 -->
+  <main id="viewLogin" class="wrap">
+    <section class="panel login-wrap">
+      <h1>관리자 로그인</h1>
+      <p class="muted small" style="margin:0 0 18px">분실물 등록·수정·반환 처리는 관리자 인증 후에만 할 수 있습니다.</p>
+      <form id="loginForm" class="stack" autocomplete="off">
+        <div class="field"><label for="lname">이름(아이디)</label><input id="lname" class="input" maxlength="30" required autocomplete="username"></div>
+        <div class="field"><label for="lpw">비밀번호</label><input id="lpw" class="input" type="password" maxlength="64" required autocomplete="current-password"></div>
+        <div id="loginErr" class="small" style="color:var(--danger);font-weight:700;min-height:20px" role="alert"></div>
+        <button id="btnLogin" class="btn btn-primary btn-lg" type="submit">로그인</button>
+      </form>
+      <p class="small muted" style="margin:16px 0 0">관리자 계정은 스프레드시트 메뉴 <b>분실물센터 → 관리자 추가</b>에서 만듭니다.</p>
+    </section>
+    <p class="foot"><a href="<?= baseUrl ?>" target="_top">← 학생용 분실물 찾기 화면</a></p>
+  </main>
+
+  <!-- 관리 화면 -->
+  <div id="viewApp" class="hidden">
+    <div class="wrap"><nav class="tabs" role="tablist" id="tabs">
+      <button class="tab" role="tab" data-tab="dash">대시보드</button>
+      <button class="tab" role="tab" data-tab="add">＋ 물품 등록</button>
+      <button class="tab" role="tab" data-tab="manage">물품 관리</button>
+      <button class="tab" role="tab" data-tab="long">장기 보관 <span id="longCnt" class="cnt hidden"></span></button>
+      <button class="tab" role="tab" data-tab="history">이력</button>
+      <button class="tab" role="tab" data-tab="settings">설정</button>
+    </nav></div>
+    <main class="wrap section">
+      <section id="tab-dash" class="hidden"></section>
+      <section id="tab-add" class="hidden"></section>
+      <section id="tab-manage" class="hidden"></section>
+      <section id="tab-long" class="hidden"></section>
+      <section id="tab-history" class="hidden"></section>
+      <section id="tab-settings" class="hidden"></section>
+    </main>
+  </div>
+
+  <div id="modalRoot"></div>
+  <div id="toasts" class="toast-wrap" aria-live="polite"></div>
+
+<script>
+  const BOOT = <?!= bootJson ?>;
+  const S = { token: null, me: null, items: [], settings: null, today: '', recentReturns: [], thumbs: {}, full: {}, tab: 'dash',
+              mf: { q: '', status: '보관중', vis: '', cat: '' }, history: null, hf: { type: '', q: '' } };
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const store = {
+    get(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} },
+    del(k) { try { sessionStorage.removeItem(k); } catch (e) {} }
+  };
+  function clientId() {
+    try { let id = localStorage.getItem('lf_cid'); if (!id) { id = makeId(); localStorage.setItem('lf_cid', id); } return id; }
+    catch (e) { return S._cid || (S._cid = makeId()); }
+  }
+  function makeId() { const raw = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now(); return raw.replace(/[^A-Za-z0-9-]/g, '').slice(0, 40); }
+
+  function api(fn, ...args) {
+    return new Promise((resolve, reject) => {
+      google.script.run.withSuccessHandler(resolve).withFailureHandler(err => {
+        const msg = (err && err.message) ? err.message : String(err);
+        if (msg.indexOf('AUTH:') >= 0) sessionExpired();
+        reject(new Error(msg.replace(/^[\s\S]*?AUTH:\s*/, '').replace(/^Error:\s*/, '') || '오류가 발생했습니다.'));
+      })[fn](...args);
+    });
+  }
+  function toast(msg, isErr) {
+    const t = document.createElement('div'); t.className = 'toast' + (isErr ? ' err' : ''); t.textContent = msg;
+    $('#toasts').appendChild(t); setTimeout(() => t.remove(), isErr ? 5000 : 3000);
+  }
+  function busy(btn, on, label) {
+    if (!btn) return;
+    if (on) { btn._label = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> ' + (label || '처리 중…'); }
+    else { btn.disabled = false; if (btn._label != null) btn.innerHTML = btn._label; }
+  }
+  const pad = n => String(n).padStart(2, '0');
+  function localToday() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+  function localNowInput() { const d = new Date(); return `${localToday()}T${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+  function addDays(ymd, n) { const p = ymd.split('-').map(Number); return new Date(Date.UTC(p[0], p[1] - 1, p[2] + n)).toISOString().slice(0, 10); }
+  function shortDT(s) { return String(s || '').slice(0, 16); }
+
+  function statusBadge(it) {
+    if (it.status === '보관중') return it.overdue ? `<span class="badge b-long">기간 경과 ${it.overdue_days}일</span>` : '<span class="badge b-keep">보관중</span>';
+    if (it.status === '반환완료') return '<span class="badge b-returned">반환완료</span>';
+    if (it.status === '폐기') return '<span class="badge b-disposed">폐기 처리</span>';
+    return `<span class="badge b-disposed">${esc(it.status)}</span>`;
+  }
+  const visBadge = v => v === '공개' ? '<span class="badge b-public">공개</span>' : '<span class="badge b-private">비공개</span>';
+
+  /* ---------- 로그인 ---------- */
+  if (BOOT.error) { $('#loginErr').textContent = BOOT.error; }
+
+  (function resume() {
+    try {
+      const o = JSON.parse(store.get('lf_admin') || 'null');
+      if (o && o.token && o.exp > Date.now()) { S.token = o.token; enterApp(); }
+      else store.del('lf_admin');
+    } catch (e) { store.del('lf_admin'); }
+  })();
+
+  $('#loginForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = $('#btnLogin');
+    busy(btn, true, '확인 중…'); $('#loginErr').textContent = '';
+    try {
+      const r = await api('adminLogin', $('#lname').value.trim(), $('#lpw').value, clientId());
+      S.token = r.token;
+      store.set('lf_admin', JSON.stringify({ token: r.token, exp: Date.now() + r.ttl * 1000 - 60000 }));
+      $('#lpw').value = '';
+      enterApp();
+    } catch (err) { $('#loginErr').textContent = err.message; }
+    finally { busy(btn, false); }
+  });
+
+  $('#btnLogout').addEventListener('click', () => {
+    if (S.token) api('logout', S.token).catch(() => {});
+    leaveApp();
+  });
+
+  function sessionExpired() {
+    leaveApp();
+    $('#loginErr').textContent = '로그인 시간이 지났습니다. 다시 로그인해 주세요.';
+  }
+  function leaveApp() {
+    S.token = null; S.items = []; S.thumbs = {}; S.full = {}; S.history = null;
+    store.del('lf_admin'); closeModal();
+    $('#viewApp').classList.add('hidden'); $('#viewLogin').classList.remove('hidden');
+    $('#btnLogout').classList.add('hidden'); $('#meName').classList.add('hidden');
+  }
+
+  async function enterApp() {
+    $('#viewLogin').classList.add('hidden'); $('#viewApp').classList.remove('hidden');
+    $('#btnLogout').classList.remove('hidden');
+    $('#tab-dash').innerHTML = '<div class="loading-row"><div class="spinner"></div>불러오는 중…</div>';
+    showTab(S.tab, true);
+    await refresh();
+  }
+
+  async function refresh() {
+    try {
+      const r = await api('adminBootstrap', S.token);
+      S.me = r.me; S.items = r.items; S.settings = r.settings; S.today = r.today; S.recentReturns = r.recentReturns;
+      S.history = null;
+      $('#meName').textContent = r.me.name + ' 님'; $('#meName').classList.remove('hidden');
+      document.querySelectorAll('.js-school').forEach(el => { el.textContent = r.settings.schoolName; });
+      const longN = S.items.filter(i => i.overdue).length;
+      $('#longCnt').textContent = longN; $('#longCnt').classList.toggle('hidden', !longN);
+      renderTab();
+    } catch (err) { if (S.token) toast(err.message, true); }
+  }
+
+  /* ---------- 탭 ---------- */
+  $('#tabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (b) showTab(b.dataset.tab); });
+  function showTab(t, noRender) {
+    S.tab = t;
+    document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === t));
+    document.querySelectorAll('[id^="tab-"]').forEach(s => s.classList.toggle('hidden', s.id !== 'tab-' + t));
+    if (!noRender && S.settings) renderTab();
+  }
+  function renderTab() {
+    ({ dash: renderDash, add: renderAdd, manage: renderManage, long: renderLong, history: renderHistory, settings: renderSettings })[S.tab]();
+  }
+
+  /* ---------- 썸네일 ---------- */
+  const thumbQ = new Set(); let pumping = false;
+  const io = ('IntersectionObserver' in window) ? new IntersectionObserver(ens => ens.forEach(en => {
+    if (!en.isIntersecting) return; io.unobserve(en.target);
+    const id = en.target.dataset.thumb; if (!S.thumbs[id]) { thumbQ.add(id); pump(); }
+  }), { rootMargin: '300px' }) : null;
+  function thumbHtml(it) {
+    const t = S.thumbs[it.item_id];
+    if (t && t !== 'none') return `<img src="${esc(t)}" alt="" onerror="this.outerHTML='<div class=&quot;ph noimg&quot;>없음</div>'">`;
+    if (!it.hasImage || t === 'none') return '<div class="ph noimg">없음</div>';
+    return `<div class="ph" data-thumb="${esc(it.item_id)}"></div>`;
+  }
+  function hookThumbs(root) { root.querySelectorAll('[data-thumb]').forEach(el => io ? io.observe(el) : (thumbQ.add(el.dataset.thumb), pump())); }
+  async function pump() {
+    if (pumping) return; pumping = true;
+    try {
+      while (thumbQ.size && S.token) {
+        const ids = [...thumbQ].slice(0, 12); ids.forEach(i => thumbQ.delete(i));
+        let map; try { map = await api('adminGetThumbs', S.token, ids); } catch (e) { break; }
+        ids.forEach(id => {
+          S.thumbs[id] = map[id] || 'none';
+          document.querySelectorAll('[data-thumb]').forEach(el => {
+            if (el.dataset.thumb !== id) return;
+            if (map[id]) { const img = new Image(); img.alt = ''; img.onerror = () => { const d = document.createElement('div'); d.className = 'ph noimg'; d.textContent = '없음'; img.replaceWith(d); }; img.src = map[id]; el.replaceWith(img); }
+            else { el.classList.add('noimg'); el.textContent = '없음'; el.removeAttribute('data-thumb'); }
+          });
+        });
+      }
+    } finally { pumping = false; }
+  }
+
+  function itemRow(it, actsHtml) {
+    return `<div class="li" data-open="${esc(it.item_id)}">
+      <div class="th">${thumbHtml(it)}</div>
+      <div class="main">
+        <div class="t">${esc(it.item_name)} ${statusBadge(it)} ${visBadge(it.visibility)}</div>
+        <div class="s"><span class="idtag">${esc(it.item_id)}</span> · ${esc(it.category)} · 습득 ${esc(it.found_date)} ${esc(it.found_location)} · 보관 <b>${esc(it.storage_location)}</b>${it.status === '보관중' ? ` · 만료 ${esc(it.expire_date)}` : ''}</div>
+      </div>
+      ${actsHtml ? `<div class="acts">${actsHtml}</div>` : ''}
+    </div>`;
+  }
+  function quickActs(it) {
+    if (it.status !== '보관중') return '';
+    return `<button class="btn btn-sm" type="button" data-act="vis" data-id="${esc(it.item_id)}">${it.visibility === '공개' ? '비공개로' : '공개로'}</button>
+            <button class="btn btn-sm btn-primary" type="button" data-act="return" data-id="${esc(it.item_id)}">반환 처리</button>`;
+  }
+  document.addEventListener('click', e => {
+    const a = e.target.closest('[data-act]');
+    if (a && !a.closest('.modal')) { e.stopPropagation(); runAct(a.dataset.act, a.dataset.id, a); return; }
+    const o = e.target.closest('[data-open]');
+    if (o && !e.target.closest('.modal')) openItem(o.dataset.open);
+  });
+  function runAct(act, id, btn) {
+    ({ vis: toggleVis, return: openReturn, undo: openUndo, dispose: openDispose, del: openDelete, edit: openEdit })[act](id, btn);
+  }
+
+  /* ---------- 대시보드 ---------- */
+  function renderDash() {
+    const it = S.items;
+    const keep = it.filter(i => i.status === '보관중');
+    const st = [
+      ['전체 등록', it.length, { status: '' }],
+      ['보관 중', keep.length, { status: '보관중' }],
+      ['공개 중', keep.filter(i => i.visibility === '공개').length, { status: '보관중', vis: '공개' }],
+      ['비공개', keep.filter(i => i.visibility === '비공개').length, { status: '보관중', vis: '비공개' }],
+      ['반환 완료', it.filter(i => i.status === '반환완료').length, { status: '반환완료' }],
+      ['보관 기간 경과', keep.filter(i => i.overdue).length, 'long']
+    ];
+    const recent = it.slice(0, 6);
+    $('#tab-dash').innerHTML = `
+      <div class="section-title"><h2>오늘의 현황</h2><span class="small muted">${esc(S.today)} 기준</span><button class="btn btn-sm" type="button" id="btnRefresh">새로고침</button></div>
+      <div class="stats">${st.map((s, k) => `<button type="button" class="stat ${s[2] === 'long' && s[1] ? 'warn' : ''}" data-stat="${k}"><span class="v tnum">${s[1]}</span><span class="l">${s[0]}</span></button>`).join('')}</div>
+      <div class="two">
+        <div class="panel panel-pad"><h2>최근 등록 물품</h2><div class="list" id="dashRecent">${recent.length ? recent.map(i => itemRow(i, '')).join('') : '<div class="empty-note">아직 등록된 물품이 없습니다.<br><br><button class="btn btn-primary" type="button" onclick="showTab(\'add\')">첫 물품 등록하기</button></div>'}</div></div>
+        <div class="panel panel-pad"><h2>최근 반환 처리</h2>${S.recentReturns.length ? `<table class="tbl"><thead><tr><th>반환 일시</th><th>물품</th><th>담당</th></tr></thead><tbody>${S.recentReturns.map(h => `<tr><td class="tnum">${esc(shortDT(h.action_date))}</td><td><span class="idtag">${esc(h.item_id)}</span><br>${esc(h.item_name)}</td><td>${esc(h.processor)}</td></tr>`).join('')}</tbody></table>` : '<div class="empty-note">반환 처리 내역이 없습니다.</div>'}</div>
+      </div>`;
+    hookThumbs($('#tab-dash'));
+    $('#btnRefresh').onclick = refresh;
+    $('#tab-dash').querySelectorAll('[data-stat]').forEach(b => b.onclick = () => {
+      const f = st[+b.dataset.stat][2];
+      if (f === 'long') return showTab('long');
+      S.mf = Object.assign({ q: '', status: '', vis: '', cat: '' }, f); showTab('manage');
+    });
+  }
+
+  /* ---------- 등록 / 수정 폼 ---------- */
+  function formHtml(it) {
+    const s = S.settings, e = !!it;
+    const cats = s.categories.slice(); if (e && cats.indexOf(it.category) < 0) cats.push(it.category);
+    const locs = s.storageLocations.slice(); if (e && locs.indexOf(it.storage_location) < 0) locs.push(it.storage_location);
+    const v = (k, d) => esc(e ? it[k] : (d || ''));
+    const vis = e ? it.visibility : '공개';
+    return `
+      <div class="grid2">
+        <div class="field full"><label>물품명<span class="req">*</span></label><input class="input" name="item_name" maxlength="60" placeholder="예: 파란색 물통" value="${v('item_name')}"></div>
+        <div class="field full"><span class="label">물품 사진${e ? '' : '<span class="req">*</span>'}</span>
+          <div class="photo-box">
+            <div class="photo-prev" data-prev>${e ? '<span>현재 사진 유지</span>' : '<span>사진을<br>선택하세요</span>'}</div>
+            <div class="stack" style="flex:1;min-width:220px;gap:8px">
+              <label class="btn" style="align-self:flex-start">${e ? '사진 바꾸기' : '사진 선택 / 촬영'}<input type="file" name="photo" accept="image/*" hidden></label>
+              <div class="small muted" data-photo-msg>JPG·PNG 등 사진 파일. 큰 사진은 자동으로 줄여서 저장합니다.</div>
+              <div class="notice notice-warn small"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><span>학생 얼굴, 이름표, 학년·반, 연락처가 사진에 보이지 않게 찍어 주세요. 이름이 적힌 물건은 <b>비공개</b>를 권장합니다.</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="field"><label>물품 분류<span class="req">*</span></label><select class="select" name="category"><option value="">선택하세요</option>${cats.map(c => `<option ${e && it.category === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>
+        <div class="field"><label>습득 날짜<span class="req">*</span></label><input class="input" type="date" name="found_date" max="${localToday()}" value="${e ? esc(it.found_date) : localToday()}"></div>
+        <div class="field"><label>습득 장소<span class="req">*</span></label><input class="input" name="found_location" maxlength="60" list="dlFound" placeholder="예: 3층 복도, 운동장" value="${v('found_location')}">
+          <datalist id="dlFound">${s.foundLocations.map(x => `<option value="${esc(x)}">`).join('')}</datalist></div>
+        <div class="field"><label>보관 장소<span class="req">*</span></label><select class="select" name="storage_location"><option value="">선택하세요</option>${locs.map(c => `<option ${e && it.storage_location === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>
+        <div class="field full"><label>물품 특징 <span class="muted small">(선택)</span></label><textarea class="textarea" name="description" maxlength="300" placeholder="색상, 모양, 브랜드, 그림 등 (이름·학년반 같은 개인정보는 적지 마세요)">${v('description')}</textarea></div>
+        <div class="field"><span class="label">공개 여부<span class="req">*</span></span>
+          <div class="seg"><label><input type="radio" name="visibility" value="공개" ${vis === '공개' ? 'checked' : ''}><span>공개</span></label><label><input type="radio" name="visibility" value="비공개" ${vis === '비공개' ? 'checked' : ''}><span>비공개</span></label></div>
+          <span class="hint">비공개 물품은 학생 화면에 나오지 않고 관리자 화면에서만 보입니다.</span></div>
+        <div class="field"><label>보관 기간 (일)<span class="req">*</span></label><input class="input tnum" type="number" name="storage_period" min="1" max="3650" value="${e ? esc(it.storage_period) : s.defaultPeriod}">
+          <div class="quick">${[30, 60, 90, 180].map(n => `<button type="button" class="btn btn-sm" data-period="${n}">${n}일</button>`).join('')}</div>
+          <span class="hint" data-expire></span></div>
+      </div>`;
+  }
+
+  function bindForm(root) {
+    const q = n => root.querySelector(`[name="${n}"]`);
+    const upd = () => {
+      const d = q('found_date').value, p = parseInt(q('storage_period').value, 10);
+      root.querySelector('[data-expire]').textContent = (d && p > 0) ? `습득일 기준 보관 만료일: ${addDays(d, p)} (기간이 지나도 자동 폐기되지 않습니다)` : '';
+    };
+    q('found_date').addEventListener('change', upd); q('storage_period').addEventListener('input', upd);
+    root.querySelectorAll('[data-period]').forEach(b => b.onclick = () => { q('storage_period').value = b.dataset.period; upd(); });
+    upd();
+    q('photo').addEventListener('change', async ev => {
+      const f = ev.target.files && ev.target.files[0];
+      const msg = root.querySelector('[data-photo-msg]'), prev = root.querySelector('[data-prev]');
+      root._image = null;
+      if (!f) return;
+      msg.textContent = '사진 처리 중…'; msg.style.color = '';
+      try {
+        const r = await processImage(f);
+        root._image = r;
+        prev.innerHTML = `<img src="${r.thumb}" alt="미리보기">`;
+        msg.textContent = `준비됨 · ${r.w}×${r.h}px · 약 ${Math.round(r.main.length * 0.75 / 1024)}KB로 저장`;
+      } catch (err) {
+        prev.innerHTML = '<span>사진을 열 수 없음</span>';
+        msg.textContent = err.message; msg.style.color = 'var(--danger)';
+        ev.target.value = '';
+      }
+    });
+  }
+
+  function collectForm(root) {
+    const q = n => root.querySelector(`[name="${n}"]`);
+    const vis = root.querySelector('[name="visibility"]:checked');
+    const d = {
+      item_name: q('item_name').value.trim(), category: q('category').value, found_date: q('found_date').value,
+      found_location: q('found_location').value.trim(), storage_location: q('storage_location').value,
+      description: q('description').value.trim(), visibility: vis ? vis.value : '', storage_period: q('storage_period').value
+    };
+    const need = [['item_name', '물품명'], ['category', '물품 분류'], ['found_date', '습득 날짜'], ['found_location', '습득 장소'], ['storage_location', '보관 장소'], ['visibility', '공개 여부'], ['storage_period', '보관 기간']];
+    for (const [k, label] of need) if (!d[k]) { const el = q(k); if (el && el.focus) el.focus(); throw new Error(label + '을(를) 입력해 주세요.'); }
+    if (root._image) d.image = { main: root._image.main, thumb: root._image.thumb };
+    return d;
+  }
+
+  /** 사진 축소: 긴 변 1280px(본 사진) / 360px(목록용), JPEG */
+  function processImage(file) {
+    return new Promise((resolve, reject) => {
+      if (file.size > 30 * 1024 * 1024) return reject(new Error('30MB가 넘는 파일은 올릴 수 없습니다.'));
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const main = resize(img, 1280, 0.82), thumb = resize(img, 360, 0.72);
+          URL.revokeObjectURL(url);
+          resolve({ main: main.url, thumb: thumb.url, w: main.w, h: main.h });
+        } catch (e) { reject(new Error('사진을 처리하지 못했습니다. 다른 사진으로 시도해 주세요.')); }
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('이 사진 형식은 열 수 없습니다. JPG/PNG로 다시 선택해 주세요. (아이폰: 설정 → 카메라 → 포맷 → 높은 호환성)')); };
+      img.src = url;
+    });
+  }
+  function resize(img, max, q) {
+    let w = img.naturalWidth, h = img.naturalHeight;
+    const r = Math.min(1, max / Math.max(w, h)); w = Math.max(1, Math.round(w * r)); h = Math.max(1, Math.round(h * r));
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); x.drawImage(img, 0, 0, w, h);
+    return { url: c.toDataURL('image/jpeg', q), w, h };
+  }
+
+  function renderAdd() {
+    const sec = $('#tab-add');
+    if (sec.dataset.state === 'done') return;
+    if (sec.querySelector('form')) return; // 작성 중인 내용 유지
+    sec.innerHTML = `
+      <div class="section-title"><h2>분실물 등록</h2></div>
+      <form class="panel panel-pad" id="addForm" novalidate>
+        ${formHtml(null)}
+        <div class="row" style="justify-content:flex-end;margin-top:18px"><button class="btn" type="reset">비우기</button><button class="btn btn-primary btn-lg" type="submit" id="btnAdd">등록하기</button></div>
+      </form>`;
+    const f = $('#addForm');
+    bindForm(f);
+    f.addEventListener('reset', () => setTimeout(() => {
+      f._image = null;
+      f.querySelector('[data-prev]').innerHTML = '<span>사진을<br>선택하세요</span>';
+      f.querySelector('[data-photo-msg]').textContent = 'JPG·PNG 등 사진 파일. 큰 사진은 자동으로 줄여서 저장합니다.';
+      f.querySelector('[name="storage_period"]').dispatchEvent(new Event('input'));
+    }, 0));
+    f.addEventListener('submit', async e => {
+      e.preventDefault();
+      let d;
+      try { d = collectForm(f); if (!d.image) throw new Error('물품 사진을 선택해 주세요.'); }
+      catch (err) { return toast(err.message, true); }
+      const btn = $('#btnAdd'); busy(btn, true, '사진 올리는 중…');
+      try {
+        const r = await api('adminCreateItem', S.token, d);
+        sec.dataset.state = 'done';
+        sec.innerHTML = `<div class="panel done">
+          <div class="ok"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#1E6B52" stroke-width="2.6" stroke-linecap="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></div>
+          <h2 style="margin:0">등록이 완료되었습니다</h2>
+          <dl class="kv"><dt>물품 번호</dt><dd><span class="idtag">${esc(r.id)}</span></dd><dt>물품명</dt><dd>${esc(r.name)}</dd><dt>공개 여부</dt><dd>${visBadge(r.visibility)}</dd></dl>
+          <div class="row" style="justify-content:center"><button class="btn" type="button" id="btnSee">등록된 물품 확인</button><button class="btn btn-primary" type="button" id="btnMore">계속 등록하기</button></div>
+        </div>`;
+        await refresh();
+        $('#btnSee').onclick = () => openItem(r.id);
+        $('#btnMore').onclick = () => { sec.dataset.state = ''; sec.innerHTML = ''; renderAdd(); };
+      } catch (err) { toast(err.message, true); busy(btn, false); }
+    });
+  }
+
+  /* ---------- 물품 관리 ---------- */
+  function renderManage() {
+    const s = S.settings, f = S.mf;
+    const cats = [...new Set([...s.categories, ...S.items.map(i => i.category)])];
+    $('#tab-manage').innerHTML = `
+      <div class="section-title"><h2>물품 관리</h2><button class="btn btn-sm btn-primary" type="button" onclick="showTab('add')">＋ 등록</button></div>
+      <div class="filters">
+        <div class="input-icon full"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.8-4.8"/></svg><input class="input" id="mq" type="search" placeholder="물품명·번호·특징·장소 검색" value="${esc(f.q)}"></div>
+        <select class="select" id="mstatus">${[['', '전체 상태'], ['보관중', '보관중'], ['overdue', '보관 기간 경과'], ['반환완료', '반환완료'], ['폐기', '폐기 처리']].map(o => `<option value="${o[0]}" ${f.status === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('')}</select>
+        <select class="select" id="mvis">${[['', '공개/비공개 전체'], ['공개', '공개'], ['비공개', '비공개']].map(o => `<option value="${o[0]}" ${f.vis === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('')}</select>
+        <select class="select" id="mcat"><option value="">전체 분류</option>${cats.map(c => `<option ${f.cat === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select>
+      </div>
+      <div class="small muted" id="mcount" style="margin-bottom:8px"></div>
+      <div class="panel" style="padding:4px 12px"><div class="list" id="mlist"></div></div>`;
+    const draw = () => {
+      const q = f.q.trim().toLowerCase();
+      const list = S.items.filter(i => {
+        if (f.status === 'overdue') { if (!i.overdue) return false; }
+        else if (f.status && i.status !== f.status) return false;
+        if (f.vis && i.visibility !== f.vis) return false;
+        if (f.cat && i.category !== f.cat) return false;
+        if (q && (i.item_id + ' ' + i.item_name + ' ' + i.description + ' ' + i.found_location + ' ' + i.storage_location).toLowerCase().indexOf(q) < 0) return false;
+        return true;
+      });
+      $('#mcount').textContent = `${list.length}건 (최근 등록순)`;
+      $('#mlist').innerHTML = list.length ? list.map(i => itemRow(i, quickActs(i))).join('') : '<div class="empty-note">조건에 맞는 물품이 없습니다.</div>';
+      hookThumbs($('#mlist'));
+    };
+    let t;
+    $('#mq').oninput = e => { f.q = e.target.value; clearTimeout(t); t = setTimeout(draw, 150); };
+    $('#mstatus').onchange = e => { f.status = e.target.value; draw(); };
+    $('#mvis').onchange = e => { f.vis = e.target.value; draw(); };
+    $('#mcat').onchange = e => { f.cat = e.target.value; draw(); };
+    draw();
+  }
+
+  /* ---------- 장기 보관 ---------- */
+  function renderLong() {
+    const list = S.items.filter(i => i.overdue).sort((a, b) => a.expire_date < b.expire_date ? -1 : 1);
+    $('#tab-long').innerHTML = `
+      <div class="section-title"><h2>장기 보관 물품</h2></div>
+      <div class="notice notice-info" style="margin-bottom:14px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg>
+        <span>보관 기간(습득일 + 보관 기간)이 지난 보관 중 물품입니다. <b>기간이 지나도 자동으로 폐기되지 않습니다.</b> 학교 내부 절차에 따라 결정한 뒤 [폐기 처리]로 처리 일자와 결과를 기록하거나, [수정]에서 보관 기간을 연장하세요.</span></div>
+      <div class="panel" style="padding:4px 12px"><div class="list">${list.length ? list.map(i => itemRow(i, `<button class="btn btn-sm" type="button" data-act="edit" data-id="${esc(i.item_id)}">기간 연장</button><button class="btn btn-sm" type="button" data-act="dispose" data-id="${esc(i.item_id)}">폐기 처리</button>`)).join('') : '<div class="empty-note">보관 기간이 지난 물품이 없습니다.</div>'}</div></div>`;
+    hookThumbs($('#tab-long'));
+  }
+
+  /* ---------- 이력 ---------- */
+  async function renderHistory() {
+    const sec = $('#tab-history');
+    if (!S.history) {
+      sec.innerHTML = '<div class="loading-row"><div class="spinner"></div>이력을 불러오는 중…</div>';
+      try { S.history = await api('adminGetHistory', S.token, { limit: 1000 }); }
+      catch (err) { sec.innerHTML = `<div class="empty-note">${esc(err.message)}</div>`; return; }
+      if (S.tab !== 'history') return;
+    }
+    const types = [...new Set(S.history.map(h => h.action_type))];
+    const f = S.hf;
+    sec.innerHTML = `
+      <div class="section-title"><h2>등록·반환 이력</h2><span class="small muted">최근 1,000건</span></div>
+      <div class="filters">
+        <div class="input-icon full"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.8-4.8"/></svg><input class="input" id="hq" type="search" placeholder="물품번호·물품명·처리자·메모 검색" value="${esc(f.q)}"></div>
+        <select class="select" id="htype"><option value="">전체 유형</option>${types.map(t => `<option ${f.type === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>
+      </div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>일시</th><th>유형</th><th>물품</th><th>처리자</th><th>메모</th></tr></thead><tbody id="hbody"></tbody></table></div>`;
+    const draw = () => {
+      const q = f.q.trim().toLowerCase();
+      const rows = S.history.filter(h => (!f.type || h.action_type === f.type) && (!q || (h.item_id + ' ' + h.item_name + ' ' + h.processor + ' ' + h.memo).toLowerCase().indexOf(q) >= 0));
+      $('#hbody').innerHTML = rows.length ? rows.map(h => `<tr><td class="tnum" style="white-space:nowrap">${esc(shortDT(h.action_date))}</td><td><b>${esc(h.action_type)}</b></td><td>${h.item_id && h.item_id !== '-' ? `<span class="idtag">${esc(h.item_id)}</span> ${esc(h.item_name)}` : '<span class="muted">—</span>'}</td><td>${esc(h.processor)}</td><td>${esc(h.memo)}</td></tr>`).join('') : '<tr><td colspan="5" class="empty-note">이력이 없습니다.</td></tr>';
+    };
+    $('#hq').oninput = e => { f.q = e.target.value; draw(); };
+    $('#htype').onchange = e => { f.type = e.target.value; draw(); };
+    draw();
+  }
+
+  /* ---------- 설정 ---------- */
+  function renderSettings() {
+    const s = S.settings;
+    const storageInUse = [...new Set(S.items.filter(i => i.status === '보관중').map(i => i.storage_location))];
+    $('#tab-settings').innerHTML = `
+      <div class="section-title"><h2>설정</h2></div>
+      <form class="panel panel-pad stack" id="setForm" novalidate>
+        <h2>운영 설정</h2>
+        <div class="grid2">
+          <div class="field"><label>학교명</label><input class="input" name="schoolName" maxlength="30" value="${esc(s.schoolName)}"><span class="hint">화면 제목: "학교명 분실물 센터"</span></div>
+          <div class="field"><label>기본 보관 기간 (일)</label><input class="input tnum" type="number" min="1" max="3650" name="defaultPeriod" value="${esc(s.defaultPeriod)}"><span class="hint">새 물품 등록 시 기본값. 이미 등록된 물품에는 적용되지 않습니다.</span></div>
+          <div class="field"><label>물품 분류 <span class="muted small">(한 줄에 하나)</span></label><textarea class="textarea" name="categories" rows="8">${esc(s.categories.join('\n'))}</textarea></div>
+          <div class="field"><label>보관 장소 <span class="muted small">(한 줄에 하나)</span></label><textarea class="textarea" name="storageLocations" rows="8">${esc(s.storageLocations.join('\n'))}</textarea></div>
+          <div class="field"><label>습득 장소 예시 <span class="muted small">(한 줄에 하나, 등록 시 자동완성)</span></label><textarea class="textarea" name="foundLocations" rows="6">${esc(s.foundLocations.join('\n'))}</textarea></div>
+          <div class="field"><label>첫 화면 이용 안내</label><textarea class="textarea" name="guide" rows="6" maxlength="500">${esc(s.guide)}</textarea></div>
+          <div class="field full"><label>검색 결과가 없을 때 문의 안내</label><input class="input" name="contact" maxlength="300" value="${esc(s.contact)}"></div>
+        </div>
+        <div class="notice notice-info small"><span>분류·보관 장소를 목록에서 지워도 이미 등록된 물품의 값은 그대로 남습니다. 보관 장소 이름을 바꾸려면 새 이름을 추가·저장한 뒤 아래 <b>보관 장소 일괄 변경</b>으로 물품을 옮기세요.</span></div>
+        <div class="row" style="justify-content:flex-end"><button class="btn btn-primary" type="submit" id="btnSaveSet">설정 저장</button></div>
+      </form>
+
+      <div class="panel panel-pad stack" style="margin-top:14px">
+        <h2>보관 장소 일괄 변경</h2>
+        <p class="small muted" style="margin:0">보관 중인 물품 중 선택한 장소에 있는 물품을 모두 새 장소로 옮깁니다. 물품마다 이력이 남습니다.</p>
+        <div class="row">
+          <select class="select" id="mvFrom" style="max-width:220px"><option value="">기존 장소</option>${storageInUse.map(l => `<option>${esc(l)}</option>`).join('')}</select>
+          <span>→</span>
+          <select class="select" id="mvTo" style="max-width:220px"><option value="">새 장소</option>${s.storageLocations.map(l => `<option>${esc(l)}</option>`).join('')}</select>
+          <button class="btn" type="button" id="btnMove">일괄 변경</button>
+        </div>
+      </div>
+
+      <div class="two" style="margin-top:14px">
+        <form class="panel panel-pad stack" id="viewPwForm" novalidate>
+          <h2>조회 비밀번호 변경</h2>
+          <p class="small muted" style="margin:0">학생·교직원 공용 비밀번호입니다. 바꾸면 새 비밀번호를 안내해 주세요. (기존 로그인은 최대 6시간 유지)</p>
+          <div class="field"><label>새 조회 비밀번호 (4자 이상)</label><input class="input" type="password" name="p1" maxlength="50" autocomplete="new-password"></div>
+          <div class="field"><label>한 번 더</label><input class="input" type="password" name="p2" maxlength="50" autocomplete="new-password"></div>
+          <div class="row" style="justify-content:flex-end"><button class="btn" type="submit">변경</button></div>
+        </form>
+        <form class="panel panel-pad stack" id="myPwForm" novalidate>
+          <h2>내 관리자 비밀번호 변경</h2>
+          <div class="field"><label>현재 비밀번호</label><input class="input" type="password" name="cur" maxlength="64" autocomplete="current-password"></div>
+          <div class="field"><label>새 비밀번호 (8자 이상)</label><input class="input" type="password" name="p1" maxlength="64" autocomplete="new-password"></div>
+          <div class="field"><label>한 번 더</label><input class="input" type="password" name="p2" maxlength="64" autocomplete="new-password"></div>
+          <div class="row" style="justify-content:flex-end"><button class="btn" type="submit">변경</button></div>
+        </form>
+      </div>
+
+      <div class="panel panel-pad stack" style="margin-top:14px">
+        <h2>백업</h2>
+        <p class="small muted" style="margin:0">데이터 시트를 백업 폴더에 새 스프레드시트로 복사합니다(최근 30개 보관). 사진은 Drive 사진 폴더에 그대로 남아 있습니다. 매일 자동 백업은 스프레드시트 메뉴에서 켤 수 있습니다.</p>
+        <div><button class="btn" type="button" id="btnBackup">지금 백업하기</button></div>
+      </div>`;
+
+    $('#setForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const f = e.target, g = n => f.querySelector(`[name="${n}"]`).value;
+      const btn = $('#btnSaveSet'); busy(btn, true, '저장 중…');
+      try {
+        S.settings = await api('adminSaveSettings', S.token, {
+          schoolName: g('schoolName'), defaultPeriod: g('defaultPeriod'), categories: g('categories'),
+          storageLocations: g('storageLocations'), foundLocations: g('foundLocations'), guide: g('guide'), contact: g('contact')
+        });
+        const add = $('#tab-add'); add.innerHTML = ''; add.dataset.state = '';
+        toast('설정을 저장했습니다.'); await refresh();
+      } catch (err) { toast(err.message, true); busy(btn, false); }
+    });
+    $('#btnMove').onclick = async () => {
+      const from = $('#mvFrom').value, to = $('#mvTo').value;
+      if (!from || !to) return toast('기존 장소와 새 장소를 선택해 주세요.', true);
+      const n = S.items.filter(i => i.status === '보관중' && i.storage_location === from).length;
+      if (!(await confirmBox('보관 장소 일괄 변경', `보관 중인 물품 ${n}건의 보관 장소를 "${from}" → "${to}"(으)로 바꿉니다.`, '변경'))) return;
+      try { const r = await api('adminMoveStorage', S.token, from, to); toast(`${r.moved}건을 옮겼습니다.`); await refresh(); }
+      catch (err) { toast(err.message, true); }
+    };
+    $('#viewPwForm').addEventListener('submit', async e => {
+      e.preventDefault(); const f = e.target, p1 = f.p1.value, p2 = f.p2.value;
+      if (p1.length < 4) return toast('4자 이상으로 정해 주세요.', true);
+      if (p1 !== p2) return toast('두 번 입력한 비밀번호가 다릅니다.', true);
+      try { await api('adminChangeViewPassword', S.token, p1); f.reset(); toast('조회 비밀번호를 바꿨습니다.'); S.history = null; }
+      catch (err) { toast(err.message, true); }
+    });
+    $('#myPwForm').addEventListener('submit', async e => {
+      e.preventDefault(); const f = e.target;
+      if (f.p1.value.length < 8) return toast('8자 이상으로 정해 주세요.', true);
+      if (f.p1.value !== f.p2.value) return toast('두 번 입력한 비밀번호가 다릅니다.', true);
+      try { await api('adminChangeMyPassword', S.token, f.cur.value, f.p1.value); f.reset(); toast('비밀번호를 바꿨습니다.'); S.history = null; }
+      catch (err) { toast(err.message, true); }
+    });
+    $('#btnBackup').onclick = async e => {
+      const b = e.currentTarget; busy(b, true, '백업 중…');
+      try { const r = await api('adminBackupNow', S.token); toast('백업 완료: ' + r.name); S.history = null; }
+      catch (err) { toast(err.message, true); }
+      finally { busy(b, false); }
+    };
+  }
+
+  /* ---------- 물품 상세 (관리자) ---------- */
+  async function openItem(id) {
+    const it = S.items.find(i => i.item_id === id);
+    if (!it) return toast('물품을 찾을 수 없습니다. 새로고침해 주세요.', true);
+    const t = S.full[id] || (S.thumbs[id] && S.thumbs[id] !== 'none' ? S.thumbs[id] : '');
+    const k = it.status === '보관중';
+    openModal(`
+      <div class="modal-head"><h3>${esc(it.item_name)}</h3><button class="btn btn-ghost btn-sm" type="button" data-close>닫기 ✕</button></div>
+      <div class="modal-body">
+        <div class="detail-img" id="dImg">${t ? `<img src="${esc(t)}" alt="">` : (it.hasImage ? '<div class="spinner"></div>' : '<span class="muted">사진 없음</span>')}</div>
+        <div class="row" style="margin-bottom:12px">${statusBadge(it)} ${visBadge(it.visibility)}</div>
+        <dl class="kv">
+          <dt>물품 번호</dt><dd><span class="idtag">${esc(it.item_id)}</span></dd>
+          <dt>분류</dt><dd>${esc(it.category)}</dd>
+          <dt>특징</dt><dd>${esc(it.description) || '<span class="muted">—</span>'}</dd>
+          <dt>습득</dt><dd>${esc(it.found_date)} · ${esc(it.found_location)}</dd>
+          <dt>보관 장소</dt><dd>${esc(it.storage_location)}</dd>
+          <dt>보관 기간</dt><dd>${esc(it.storage_period)}일 (만료 ${esc(it.expire_date)})</dd>
+          <dt>등록</dt><dd>${esc(shortDT(it.registered_at))} · ${esc(it.registered_by)}</dd>
+          ${it.returned_at ? `<dt>반환 일시</dt><dd>${esc(shortDT(it.returned_at))}</dd>` : ''}
+          ${it.disposed_at ? `<dt>폐기 처리일</dt><dd>${esc(it.disposed_at)}</dd>` : ''}
+        </dl>
+        <div class="mini-hist" id="dHist"><h4>처리 이력</h4><div class="muted">불러오는 중…</div></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" type="button" data-m="del" style="color:var(--danger);margin-right:auto">삭제</button>
+        ${k ? '<button class="btn" type="button" data-m="dispose">폐기 처리</button>' : ''}
+        ${it.status !== '폐기' ? '<button class="btn" type="button" data-m="edit">수정</button>' : ''}
+        ${k ? `<button class="btn" type="button" data-m="vis">${it.visibility === '공개' ? '비공개로' : '공개로'}</button>` : ''}
+        ${k ? '<button class="btn btn-primary" type="button" data-m="return">반환 처리</button>' : ''}
+        ${it.status === '반환완료' ? '<button class="btn" type="button" data-m="undo">반환 취소</button>' : ''}
+      </div>`);
+    $('#modalRoot').querySelectorAll('[data-m]').forEach(b => b.onclick = () => runAct(b.dataset.m, id, b));
+    if (it.hasImage && !S.full[id]) {
+      api('adminGetImage', S.token, id).then(u => { if (u) { S.full[id] = u; const b = document.getElementById('dImg'); if (b) b.innerHTML = `<img src="${esc(u)}" alt="">`; } }).catch(() => {});
+    }
+    try {
+      const h = await api('adminGetHistory', S.token, { itemId: id, limit: 50 });
+      const box = document.getElementById('dHist');
+      if (box) box.innerHTML = '<h4>처리 이력</h4>' + (h.length ? h.map(x => `<div><b>${esc(x.action_type)}</b> · ${esc(shortDT(x.action_date))} · ${esc(x.processor)}${x.memo ? `<br><span class="muted">${esc(x.memo)}</span>` : ''}</div>`).join('') : '<div class="muted">이력 없음</div>');
+    } catch (e) { }
+  }
+
+  async function toggleVis(id, btn) {
+    const it = S.items.find(i => i.item_id === id); if (!it) return;
+    const next = it.visibility === '공개' ? '비공개' : '공개';
+    busy(btn, true, '');
+    try { await api('adminSetVisibility', S.token, id, next); toast(`${it.item_name}: ${next}(으)로 바꿨습니다.`); closeModal(); await refresh(); }
+    catch (err) { toast(err.message, true); busy(btn, false); }
+  }
+
+  function openEdit(id) {
+    const it = S.items.find(i => i.item_id === id); if (!it) return;
+    openModal(`
+      <div class="modal-head"><h3>물품 수정 <span class="idtag">${esc(id)}</span></h3><button class="btn btn-ghost btn-sm" type="button" data-close>닫기 ✕</button></div>
+      <form id="editForm" novalidate><div class="modal-body">${formHtml(it)}</div>
+      <div class="modal-foot"><button class="btn" type="button" data-close>취소</button><button class="btn btn-primary" type="submit" id="btnEditSave">저장</button></div></form>`);
+    const f = $('#editForm'); bindForm(f);
+    const prev = f.querySelector('[data-prev]');
+    const t = S.thumbs[id];
+    if (t && t !== 'none') prev.innerHTML = `<img src="${esc(t)}" alt="현재 사진">`;
+    f.addEventListener('submit', async e => {
+      e.preventDefault();
+      let d; try { d = collectForm(f); } catch (err) { return toast(err.message, true); }
+      const btn = $('#btnEditSave'); busy(btn, true, '저장 중…');
+      try {
+        const r = await api('adminUpdateItem', S.token, id, d);
+        if (d.image) { delete S.thumbs[id]; delete S.full[id]; }
+        toast(r.changed ? '수정했습니다.' : '바뀐 내용이 없습니다.'); closeModal(); await refresh();
+      } catch (err) { toast(err.message, true); busy(btn, false); }
+    });
+  }
+
+  function openReturn(id) {
+    const it = S.items.find(i => i.item_id === id); if (!it) return;
+    openModal(`
+      <div class="modal-head"><h3>반환 처리</h3><button class="btn btn-ghost btn-sm" type="button" data-close>닫기 ✕</button></div>
+      <form id="retForm" novalidate><div class="modal-body stack">
+        <div class="notice notice-info small"><span><b>${esc(it.item_name)}</b> <span class="idtag">${esc(id)}</span><br>실제 물품과 소유 여부를 확인한 뒤 처리해 주세요.</span></div>
+        <div class="field"><label>반환 일시</label><input class="input" type="datetime-local" name="at" value="${localNowInput()}"></div>
+        <div class="field"><label>처리 담당자</label><input class="input" name="processor" maxlength="30" value="${esc(S.me.name)}"></div>
+        <div class="field"><label>내부 관리 메모 <span class="muted small">(선택)</span></label><textarea class="textarea" name="memo" maxlength="300" placeholder="예: 본인 확인 후 반환"></textarea>
+          <span class="hint">반환받은 학생의 이름 등 개인정보는 꼭 필요한 경우에만 적어 주세요.</span></div>
+      </div>
+      <div class="modal-foot"><button class="btn" type="button" data-close>취소</button><button class="btn btn-primary" type="submit" id="btnRet">반환 완료로 기록</button></div></form>`);
+    $('#retForm').addEventListener('submit', async e => {
+      e.preventDefault(); const f = e.target; const btn = $('#btnRet'); busy(btn, true);
+      try {
+        await api('adminReturnItem', S.token, id, { returned_at: f.at.value.replace('T', ' '), processor: f.processor.value, memo: f.memo.value });
+        toast('반환 완료로 기록했습니다.'); closeModal(); await refresh();
+      } catch (err) { toast(err.message, true); busy(btn, false); }
+    });
+  }
+
+  function openUndo(id) {
+    const it = S.items.find(i => i.item_id === id); if (!it) return;
+    openModal(`
+      <div class="modal-head"><h3>반환 취소</h3><button class="btn btn-ghost btn-sm" type="button" data-close>닫기 ✕</button></div>
+      <form id="undoForm" novalidate><div class="modal-body stack">
+        <p style="margin:0"><b>${esc(it.item_name)}</b>을(를) 다시 <b>보관중</b> 상태로 되돌립니다. (잘못 반환 처리한 경우)</p>
+        <div class="field"><label>사유<span class="req">*</span></label><input class="input" name="memo" maxlength="300" placeholder="예: 다른 물품을 잘못 선택함"></div>
+      </div>
+      <div class="modal-foot"><button class="btn" type="button" data-close>취소</button><button class="btn btn-primary" type="submit">되돌리기</button></div></form>`);
+    $('#undoForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      try { await api('adminUndoReturn', S.token, id, e.target.memo.value); toast('보관중으로 되돌렸습니다.'); closeModal(); await refresh(); }
+      catch (err) { toast(err.message, true); }
+    });
+  }
+
+  function openDispose(id) {
+    const it = S.items.find(i => i.item_id === id); if (!it) return;
+    openModal(`
+      <div class="modal-head"><h3>폐기 등 처리</h3><button class="btn btn-ghost btn-sm" type="button" data-close>닫기 ✕</button></div>
+      <form id="dispForm" novalidate><div class="modal-body stack">
+        <div class="notice notice-warn small"><span><b>${esc(it.item_name)}</b> <span class="idtag">${esc(id)}</span><br>학교 내부 절차에 따라 처리가 결정된 경우에만 기록해 주세요. 처리 후에는 학생 화면에서 사라지고, 기록과 사진은 관리자 화면에 남습니다.</span></div>
+        <div class="field"><label>처리 결과<span class="req">*</span></label><select class="select" name="result"><option>폐기</option><option>기부</option><option>학교 비품 활용</option><option>기타</option></select></div>
+        <div class="field"><label>처리 일자</label><input class="input" type="date" name="at" value="${localToday()}"></div>
+        <div class="field"><label>메모 <span class="muted small">(선택)</span></label><textarea class="textarea" name="memo" maxlength="300" placeholder="예: 2학기 장기보관물품 일괄 처리(내부결재 완료)"></textarea></div>
+      </div>
+      <div class="modal-foot"><button class="btn" type="button" data-close>취소</button><button class="btn btn-accent" type="submit">처리 기록</button></div></form>`);
+    $('#dispForm').addEventListener('submit', async e => {
+      e.preventDefault(); const f = e.target;
+      try { await api('adminDisposeItem', S.token, id, { result: f.result.value, disposed_at: f.at.value, memo: f.memo.value }); toast('처리 결과를 기록했습니다.'); closeModal(); await refresh(); }
+      catch (err) { toast(err.message, true); }
+    });
+  }
+
+  function openDelete(id) {
+    const it = S.items.find(i => i.item_id === id); if (!it) return;
+    openModal(`
+      <div class="modal-head"><h3>물품 삭제</h3><button class="btn btn-ghost btn-sm" type="button" data-close>닫기 ✕</button></div>
+      <form id="delForm" novalidate><div class="modal-body stack">
+        <div class="notice notice-danger small"><span>잘못 등록했거나 사진에 개인정보가 담긴 경우에 사용합니다. 삭제하면 모든 목록에서 사라지고 사진은 Drive 휴지통으로 이동합니다(30일 안에 복구 가능). 처리 이력은 남습니다.<br><b>실제로 물품을 버리는 경우는 [폐기 처리]를 사용하세요.</b></span></div>
+        <div class="field"><label>삭제 사유<span class="req">*</span></label><input class="input" name="reason" maxlength="300" placeholder="예: 중복 등록"></div>
+        <div class="field"><label>확인을 위해 물품 번호 <span class="idtag">${esc(id)}</span>를 그대로 입력하세요</label><input class="input" name="confirm" autocomplete="off" placeholder="${esc(id)}"></div>
+      </div>
+      <div class="modal-foot"><button class="btn" type="button" data-close>취소</button><button class="btn btn-danger" type="submit" id="btnDel" disabled>삭제</button></div></form>`);
+    const f = $('#delForm');
+    const chk = () => { $('#btnDel').disabled = !(f.confirm.value.trim() === id && f.reason.value.trim()); };
+    f.confirm.oninput = chk; f.reason.oninput = chk;
+    f.addEventListener('submit', async e => {
+      e.preventDefault();
+      try { await api('adminDeleteItem', S.token, id, f.confirm.value.trim(), f.reason.value); toast('삭제했습니다.'); closeModal(); delete S.thumbs[id]; delete S.full[id]; await refresh(); }
+      catch (err) { toast(err.message, true); }
+    });
+  }
+
+  /* ---------- 모달 / 확인창 ---------- */
+  function openModal(html) {
+    $('#modalRoot').innerHTML = `<div class="modal-back" role="dialog" aria-modal="true"><div class="modal">${html}</div></div>`;
+    const back = $('#modalRoot .modal-back');
+    back.addEventListener('mousedown', e => { back._down = e.target === back; });
+    back.addEventListener('click', e => { if ((e.target === back && back._down) || e.target.closest('[data-close]')) closeModal(); });
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal() { $('#modalRoot').innerHTML = ''; document.body.style.overflow = ''; }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modalRoot').innerHTML) closeModal(); });
+  function confirmBox(title, msg, okLabel) {
+    return new Promise(res => {
+      openModal(`<div class="modal-head"><h3>${esc(title)}</h3></div><div class="modal-body"><p style="margin:0">${esc(msg)}</p></div>
+        <div class="modal-foot"><button class="btn" type="button" id="cNo">취소</button><button class="btn btn-primary" type="button" id="cYes">${esc(okLabel || '확인')}</button></div>`);
+      $('#cNo').onclick = () => { closeModal(); res(false); };
+      $('#cYes').onclick = () => { closeModal(); res(true); };
+    });
+  }
+</script>
+</body>
+</html>

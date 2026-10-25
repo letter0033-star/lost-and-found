@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <?!= include('Styles'); ?>
+  <style>
+    /* 첫 화면 */
+    .hero { padding: 36px 0 20px; }
+    .hero-card { max-width: 520px; margin: 0 auto; padding: 28px 22px; text-align: center; }
+    .hero-icon { width: 76px; height: 76px; margin: 0 auto 14px; border-radius: 22px; background: var(--accent-soft); display: flex; align-items: center; justify-content: center; }
+    .hero h1 { margin: 0 0 6px; font-size: 26px; letter-spacing: -.6px; }
+    .hero .lead { margin: 0 0 18px; color: var(--muted); font-size: 16px; }
+    .guide { text-align: left; background: var(--surface-2); border: 1px dashed var(--line); border-radius: 12px; padding: 14px 16px; margin: 0 0 18px; font-size: 15px; white-space: pre-line; }
+    .login-form { display: flex; flex-direction: column; gap: 10px; text-align: left; }
+    .login-form .input { min-height: 52px; font-size: 18px; text-align: center; letter-spacing: 2px; }
+    .err-msg { color: var(--danger); font-weight: 700; font-size: 14.5px; min-height: 22px; text-align: center; }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 18px; }
+    .steps div { background: var(--surface-2); border-radius: 10px; padding: 10px 6px; font-size: 13px; color: var(--muted); }
+    .steps b { display: block; color: var(--brand); font-size: 18px; }
+
+    /* 검색 */
+    .search-bar { padding: 16px 0 6px; display: flex; flex-direction: column; gap: 10px; }
+    .search-row { display: flex; gap: 8px; }
+    .search-row .input-icon { flex: 1; }
+    .search-row .input { min-height: 48px; font-size: 16px; }
+    .chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+    .chips::-webkit-scrollbar { display: none; }
+    .chip { flex: none; height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-weight: 700; font-size: 14px; color: var(--muted); cursor: pointer; }
+    .chip[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .adv { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px; }
+    .adv .full { grid-column: 1 / -1; }
+    .result-line { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0 12px; font-size: 14px; color: var(--muted); }
+
+    /* 카드 목록 */
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    @media (min-width: 640px) { .grid { grid-template-columns: repeat(3, 1fr); gap: 16px; } }
+    @media (min-width: 960px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+    .item-card { display: flex; flex-direction: column; text-align: left; padding: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); overflow: hidden; cursor: pointer; transition: transform .12s, box-shadow .12s; }
+    .item-card:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(30,40,35,.12); }
+    .item-card:focus-visible { outline: 3px solid rgba(30,107,82,.4); outline-offset: 2px; }
+    .thumb { position: relative; aspect-ratio: 1 / 1; background: #EEEAE1; overflow: hidden; }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .thumb .badge { position: absolute; left: 8px; top: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+    .card-body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 3px; }
+    .card-cat { font-size: 12.5px; color: var(--muted); font-weight: 700; }
+    .card-body h3 { margin: 0; font-size: 16px; line-height: 1.35; letter-spacing: -.3px; }
+    .card-meta { font-size: 13px; color: var(--muted); line-height: 1.45; }
+
+    .empty { text-align: center; padding: 40px 20px; }
+    .empty h2 { margin: 10px 0 8px; font-size: 19px; }
+    .empty ul { text-align: left; display: inline-block; margin: 6px 0 14px; padding-left: 20px; color: var(--muted); font-size: 15px; }
+    .contact-box { background: var(--brand-soft); color: var(--brand-strong); border-radius: 12px; padding: 12px 14px; font-weight: 700; white-space: pre-line; display: inline-block; }
+
+    /* 상세 */
+    .detail-img { background: #EEEAE1; border-radius: 12px; overflow: hidden; aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; }
+    .detail-img img { width: 100%; height: 100%; object-fit: contain; background: #111; }
+    .where { margin: 16px 0; padding: 14px 16px; border-radius: 12px; background: var(--accent-soft); display: flex; gap: 12px; align-items: center; }
+    .where b { display: block; font-size: 20px; letter-spacing: -.3px; color: #4A3000; }
+    .where span { font-size: 13px; color: var(--accent-ink); font-weight: 700; }
+    .howto { margin: 16px 0 0; padding: 0; list-style: none; counter-reset: s; display: flex; flex-direction: column; gap: 8px; }
+    .howto li { counter-increment: s; display: flex; gap: 10px; align-items: flex-start; font-size: 15px; }
+    .howto li::before { content: counter(s); flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--brand); color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+    .idtag { font-family: ui-monospace, Menlo, Consolas, monospace; background: #F0EDE6; padding: 2px 8px; border-radius: 6px; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="wrap">
+      <div class="brand">
+        <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="9" fill="#1E6B52"/><path d="M8 13.5 17 9l9 4.5v9L17 27l-9-4.5z" fill="#F0AE34"/><path d="M8 13.5 17 18l9-4.5M17 18v9" stroke="#1E6B52" stroke-width="1.6" fill="none"/></svg>
+        <div><span id="schoolTitle"><?= schoolName ?></span> 분실물 센터<small>잃어버린 물건을 찾아 주는 곳</small></div>
+      </div>
+      <div class="spacer"></div>
+      <button id="btnLogout" class="btn btn-ghost btn-sm hidden" type="button">나가기</button>
+    </div>
+  </header>
+
+  <!-- 첫 화면: 조회 비밀번호 -->
+  <main id="viewLogin" class="wrap hero">
+    <section class="panel hero-card">
+      <div class="hero-icon">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#B57A00" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.8-4.8"/></svg>
+      </div>
+      <h1><span class="js-school"></span> 분실물 센터</h1>
+      <p class="lead">잃어버린 물건, 여기서 찾아봐요!</p>
+      <div id="guide" class="guide"></div>
+      <form id="loginForm" class="login-form" autocomplete="off">
+        <label for="pw" class="small muted" style="text-align:center">조회 비밀번호</label>
+        <input id="pw" class="input" type="password" inputmode="text" placeholder="비밀번호 입력" required maxlength="50" autocomplete="current-password">
+        <div id="loginErr" class="err-msg" role="alert"></div>
+        <button id="btnLogin" class="btn btn-primary btn-lg btn-block" type="submit">분실물 찾기</button>
+      </form>
+      <div class="steps" aria-label="이용 순서">
+        <div><b>1</b>사진으로<br>내 물건 찾기</div>
+        <div><b>2</b>보관 장소<br>확인하기</div>
+        <div><b>3</b>선생님께<br>말씀드리기</div>
+      </div>
+      <p class="small muted" style="margin:16px 0 0">비밀번호는 담임 선생님께 물어보세요.</p>
+    </section>
+  </main>
+
+  <!-- 목록 -->
+  <main id="viewList" class="wrap hidden">
+    <div class="search-bar">
+      <div class="search-row">
+        <div class="input-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.8-4.8"/></svg>
+          <input id="q" class="input" type="search" placeholder="물건 이름으로 찾기" aria-label="물품명 검색" maxlength="40">
+        </div>
+        <button id="btnAdv" class="btn" type="button" aria-expanded="false" aria-controls="adv">상세 검색</button>
+      </div>
+      <div id="chips" class="chips" role="group" aria-label="물품 분류"></div>
+      <div id="adv" class="panel adv hidden">
+        <div class="field"><label for="from">습득 날짜 (부터)</label><input id="from" class="input" type="date"></div>
+        <div class="field"><label for="to">습득 날짜 (까지)</label><input id="to" class="input" type="date"></div>
+        <div class="field full"><label for="loc">주운 장소</label><select id="loc" class="select"><option value="">전체 장소</option></select></div>
+        <div class="full" style="display:flex;justify-content:flex-end"><button id="btnReset" class="btn btn-sm" type="button">조건 초기화</button></div>
+      </div>
+    </div>
+    <div class="result-line"><span id="count" class="tnum"></span><span class="small">최근 등록순</span></div>
+    <div id="loading" class="loading-row"><div class="spinner"></div>분실물을 불러오는 중…</div>
+    <div id="grid" class="grid" aria-live="polite"></div>
+    <div id="empty" class="empty hidden"></div>
+    <div style="height:24px"></div>
+  </main>
+
+  <footer class="foot">
+    <a href="<?= baseUrl ?>?page=admin" target="_top">교직원 관리 화면</a>
+  </footer>
+
+  <div id="modalRoot"></div>
+  <div id="toasts" class="toast-wrap" aria-live="polite"></div>
+
+<script>
+  const BOOT = <?!= bootJson ?>;
+  const S = { token: null, items: [], categories: [], contact: '', thumbs: {}, cat: '', full: {} };
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  const store = {
+    get(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} },
+    del(k) { try { sessionStorage.removeItem(k); } catch (e) {} }
+  };
+  function clientId() {
+    try {
+      let id = localStorage.getItem('lf_cid');
+      if (!id) { id = makeId(); localStorage.setItem('lf_cid', id); }
+      return id;
+    } catch (e) { return S._cid || (S._cid = makeId()); }
+  }
+  function makeId() {
+    const raw = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now();
+    return raw.replace(/[^A-Za-z0-9-]/g, '').slice(0, 40);
+  }
+
+  function api(fn, ...args) {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(err => {
+          const msg = (err && err.message) ? err.message : String(err);
+          if (msg.indexOf('AUTH:') >= 0) { sessionExpired(); }
+          reject(new Error(msg.replace(/^[\s\S]*?AUTH:\s*/, '').replace(/^Error:\s*/, '') || '오류가 발생했습니다.'));
+        })[fn](...args);
+    });
+  }
+
+  function toast(msg, isErr) {
+    const t = document.createElement('div');
+    t.className = 'toast' + (isErr ? ' err' : '');
+    t.textContent = msg;
+    $('#toasts').appendChild(t);
+    setTimeout(() => t.remove(), 3500);
+  }
+
+  function fmtDate(ymd) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(ymd || '');
+    if (!m) return ymd || '';
+    const d = new Date(+m[1], +m[2] - 1, +m[3]);
+    return `${+m[2]}월 ${+m[3]}일(${'일월화수목금토'[d.getDay()]})`;
+  }
+
+  /* ---------- 시작 ---------- */
+  document.querySelectorAll('.js-school').forEach(el => { el.textContent = BOOT.schoolName; });
+  $('#guide').textContent = BOOT.guide || '';
+  if (!BOOT.guide) $('#guide').classList.add('hidden');
+  if (BOOT.error || !BOOT.ready) {
+    $('#loginErr').textContent = BOOT.error || '아직 준비 중인 서비스입니다. 담당 선생님께 알려 주세요.';
+    $('#btnLogin').disabled = true;
+  }
+
+  (function resume() {
+    const saved = store.get('lf_view');
+    if (!saved) return;
+    try {
+      const o = JSON.parse(saved);
+      if (o.token && o.exp > Date.now()) { S.token = o.token; showList(); }
+      else store.del('lf_view');
+    } catch (e) { store.del('lf_view'); }
+  })();
+
+  $('#loginForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const pw = $('#pw').value;
+    if (!pw) return;
+    const btn = $('#btnLogin');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> 확인 중…';
+    $('#loginErr').textContent = '';
+    try {
+      const r = await api('viewLogin', pw, clientId());
+      S.token = r.token;
+      store.set('lf_view', JSON.stringify({ token: r.token, exp: Date.now() + r.ttl * 1000 - 60000 }));
+      $('#pw').value = '';
+      showList();
+    } catch (err) {
+      $('#loginErr').textContent = err.message;
+      $('#pw').select();
+    } finally {
+      btn.disabled = false; btn.textContent = '분실물 찾기';
+    }
+  });
+
+  $('#btnLogout').addEventListener('click', () => {
+    if (S.token) api('logout', S.token).catch(() => {});
+    S.token = null; S.items = []; S.thumbs = {};
+    store.del('lf_view');
+    showLogin();
+  });
+
+  function sessionExpired() {
+    S.token = null; store.del('lf_view');
+    closeModal();
+    showLogin();
+    $('#loginErr').textContent = '로그인 시간이 지났어요. 비밀번호를 다시 입력해 주세요.';
+  }
+
+  function showLogin() {
+    $('#viewList').classList.add('hidden');
+    $('#viewLogin').classList.remove('hidden');
+    $('#btnLogout').classList.add('hidden');
+    setTimeout(() => $('#pw').focus(), 50);
+  }
+
+  async function showList() {
+    $('#viewLogin').classList.add('hidden');
+    $('#viewList').classList.remove('hidden');
+    $('#btnLogout').classList.remove('hidden');
+    $('#loading').classList.remove('hidden');
+    $('#grid').innerHTML = '';
+    $('#empty').classList.add('hidden');
+    try {
+      const r = await api('getPublicItems', S.token);
+      S.items = r.items; S.categories = r.categories; S.contact = r.contact || '';
+      buildFilters();
+      render();
+    } catch (err) {
+      if (S.token) toast(err.message, true);
+    } finally {
+      $('#loading').classList.add('hidden');
+    }
+  }
+
+  /* ---------- 검색 조건 ---------- */
+  function buildFilters() {
+    const cats = ['', ...S.categories];
+    // 목록에 없는 과거 분류도 칩으로 표시
+    S.items.forEach(i => { if (i.category && cats.indexOf(i.category) < 0) cats.push(i.category); });
+    $('#chips').innerHTML = cats.map(c => {
+      const n = c ? S.items.filter(i => i.category === c).length : S.items.length;
+      return `<button type="button" class="chip" data-cat="${esc(c)}" aria-pressed="${c === S.cat}">${esc(c || '전체')} <span class="tnum" style="opacity:.6">${n}</span></button>`;
+    }).join('');
+    const locs = [...new Set(S.items.map(i => i.foundLocation).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ko'));
+    const cur = $('#loc').value;
+    $('#loc').innerHTML = '<option value="">전체 장소</option>' + locs.map(l => `<option ${l === cur ? 'selected' : ''}>${esc(l)}</option>`).join('');
+  }
+
+  $('#chips').addEventListener('click', e => {
+    const b = e.target.closest('.chip');
+    if (!b) return;
+    S.cat = b.dataset.cat;
+    document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.cat === S.cat));
+    render();
+  });
+  let qTimer;
+  $('#q').addEventListener('input', () => { clearTimeout(qTimer); qTimer = setTimeout(render, 150); });
+  ['#from', '#to', '#loc'].forEach(s => $(s).addEventListener('change', render));
+  $('#btnAdv').addEventListener('click', () => {
+    const open = $('#adv').classList.toggle('hidden') === false;
+    $('#btnAdv').setAttribute('aria-expanded', open);
+  });
+  $('#btnReset').addEventListener('click', () => {
+    $('#q').value = ''; $('#from').value = ''; $('#to').value = ''; $('#loc').value = ''; S.cat = '';
+    document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.cat === ''));
+    render();
+  });
+
+  function filtered() {
+    const q = $('#q').value.trim().toLowerCase().replace(/\s+/g, '');
+    const from = $('#from').value, to = $('#to').value, loc = $('#loc').value;
+    return S.items.filter(i => {
+      if (S.cat && i.category !== S.cat) return false;
+      if (from && i.foundDate < from) return false;
+      if (to && i.foundDate > to) return false;
+      if (loc && i.foundLocation !== loc) return false;
+      if (q) {
+        const hay = (i.name + ' ' + i.description + ' ' + i.category).toLowerCase().replace(/\s+/g, '');
+        if (hay.indexOf(q) < 0) return false;
+      }
+      return true;
+    });
+  }
+
+  /* ---------- 목록 그리기 ---------- */
+  function render() {
+    const list = filtered();
+    const anyFilter = $('#q').value.trim() || S.cat || $('#from').value || $('#to').value || $('#loc').value;
+    $('#count').textContent = anyFilter ? `찾은 물건 ${list.length}개 / 전체 ${S.items.length}개` : `보관 중인 물건 ${S.items.length}개`;
+    $('#grid').innerHTML = list.map(cardHtml).join('');
+    $('#grid').querySelectorAll('[data-thumb]').forEach(el => observeThumb(el));
+    const empty = $('#empty');
+    if (list.length) { empty.classList.add('hidden'); return; }
+    empty.classList.remove('hidden');
+    empty.innerHTML = `
+      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#B57A00" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.8-4.8M8.5 10.5h4"/></svg>
+      <h2>${S.items.length ? '조건에 맞는 물건이 없어요' : '지금은 화면에 올라온 분실물이 없어요'}</h2>
+      ${S.items.length ? `<ul>
+        <li>다른 이름으로 찾아보세요. (예: 물병 → 물통, 겉옷 → 점퍼)</li>
+        <li>분류를 <b>전체</b>로 바꾸거나 날짜·장소 조건을 넓혀 보세요.</li>
+      </ul><br><button class="btn btn-sm" type="button" onclick="document.getElementById('btnReset').click()">조건 초기화</button><br><br>` : ''}
+      <p class="muted small" style="margin:0 0 12px">이름표 등 개인정보가 있는 물건은 화면에 나오지 않을 수 있어요.</p>
+      <div class="contact-box">${esc(S.contact || '담당 선생님께 문의해 주세요.')}</div>`;
+  }
+
+  function statusBadge(s) {
+    return s === '장기보관' ? '<span class="badge b-long">오래 보관 중</span>' : '<span class="badge b-keep">보관 중</span>';
+  }
+
+  function cardHtml(i) {
+    const t = S.thumbs[i.id];
+    const img = t && t !== 'none' ? `<img src="${esc(t)}" alt="" loading="lazy" onerror="this.outerHTML='<div class=&quot;ph noimg&quot;>사진 없음</div>'">` : `<div class="ph ${t === 'none' || !i.hasImage ? 'noimg' : ''}">${t === 'none' || !i.hasImage ? '사진 없음' : ''}</div>`;
+    return `<button type="button" class="item-card" data-id="${esc(i.id)}" aria-label="${esc(i.name)} 자세히 보기">
+      <div class="thumb" ${i.hasImage && !t ? `data-thumb="${esc(i.id)}"` : ''}>${img}${statusBadge(i.status)}</div>
+      <div class="card-body">
+        <span class="card-cat">${esc(i.category)}</span>
+        <h3>${esc(i.name)}</h3>
+        <span class="card-meta">${esc(fmtDate(i.foundDate))} · ${esc(i.foundLocation)}</span>
+      </div>
+    </button>`;
+  }
+
+  $('#grid').addEventListener('click', e => {
+    const c = e.target.closest('.item-card');
+    if (c) openDetail(c.dataset.id);
+  });
+
+  /* ---------- 썸네일: 화면에 보이는 것만 묶어서 요청 ---------- */
+  const thumbQ = new Set();
+  let pumping = false;
+  const io = ('IntersectionObserver' in window) ? new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (!en.isIntersecting) return;
+      io.unobserve(en.target);
+      const id = en.target.dataset.thumb;
+      if (!S.thumbs[id]) { thumbQ.add(id); pump(); }
+    });
+  }, { rootMargin: '300px' }) : null;
+
+  function observeThumb(el) {
+    if (io) io.observe(el);
+    else { thumbQ.add(el.dataset.thumb); pump(); }
+  }
+
+  async function pump() {
+    if (pumping) return;
+    pumping = true;
+    try {
+      while (thumbQ.size && S.token) {
+        const ids = [...thumbQ].slice(0, 12);
+        ids.forEach(i => thumbQ.delete(i));
+        let map;
+        try { map = await api('getPublicThumbs', S.token, ids); } catch (e) { break; }
+        ids.forEach(id => { S.thumbs[id] = map[id] || 'none'; paintThumb(id); });
+      }
+    } finally { pumping = false; }
+  }
+
+  function paintThumb(id) {
+    document.querySelectorAll('.thumb[data-thumb]').forEach(el => {
+      if (el.dataset.thumb !== id) return;
+      const url = S.thumbs[id];
+      const ph = el.querySelector('.ph');
+      if (!ph) return;
+      if (url && url !== 'none') {
+        const img = new Image(); img.alt = ''; img.onerror = () => { const d = document.createElement('div'); d.className = 'ph noimg'; d.textContent = '사진 없음'; img.replaceWith(d); }; img.src = url; ph.replaceWith(img);
+      } else { ph.classList.add('noimg'); ph.textContent = '사진 없음'; }
+      el.removeAttribute('data-thumb');
+    });
+  }
+
+  /* ---------- 상세 ---------- */
+  function openDetail(id) {
+    const i = S.items.find(x => x.id === id);
+    if (!i) return;
+    const t = S.full[id] || (S.thumbs[id] !== 'none' ? S.thumbs[id] : '');
+    openModal(`
+      <div class="modal-head"><h3>${esc(i.name)}</h3><button class="btn btn-ghost btn-sm" type="button" data-close aria-label="닫기">닫기 ✕</button></div>
+      <div class="modal-body">
+        <div class="detail-img" id="detailImg">${t ? `<img src="${esc(t)}" alt="${esc(i.name)} 사진">` : (i.hasImage ? '<div class="spinner"></div>' : '<span class="muted">사진 없음</span>')}</div>
+        <div class="where">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#B57A00" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+          <div><span>이 물건은 여기에 있어요</span><b>${esc(i.storageLocation)}</b></div>
+        </div>
+        <dl class="kv">
+          <dt>물품 번호</dt><dd><span class="idtag">${esc(i.id)}</span></dd>
+          <dt>분류</dt><dd>${esc(i.category)}</dd>
+          ${i.description ? `<dt>특징</dt><dd>${esc(i.description)}</dd>` : ''}
+          <dt>주운 날</dt><dd>${esc(fmtDate(i.foundDate))}</dd>
+          <dt>주운 곳</dt><dd>${esc(i.foundLocation)}</dd>
+          <dt>상태</dt><dd>${statusBadge(i.status)}</dd>
+        </dl>
+        <ol class="howto">
+          <li><span><b>${esc(i.storageLocation)}</b>에 가요.</span></li>
+          <li><span>담당 선생님께 물품 번호 <span class="idtag">${esc(i.id)}</span>를 말해요.</span></li>
+          <li><span>선생님이 내 물건인지 확인한 뒤 돌려주세요.</span></li>
+        </ol>
+      </div>
+      <div class="modal-foot"><button class="btn btn-primary" type="button" data-close>확인</button></div>
+    `);
+    if (i.hasImage && !S.full[id]) {
+      api('getPublicImage', S.token, id).then(url => {
+        if (!url) return;
+        S.full[id] = url;
+        const box = document.getElementById('detailImg');
+        if (box) box.innerHTML = `<img src="${esc(url)}" alt="${esc(i.name)} 사진">`;
+      }).catch(err => {
+        const box = document.getElementById('detailImg');
+        if (box && !box.querySelector('img')) box.innerHTML = '<span class="muted">사진을 불러오지 못했어요</span>';
+      });
+    }
+  }
+
+  /* ---------- 모달 ---------- */
+  let lastFocus = null;
+  function openModal(html) {
+    lastFocus = document.activeElement;
+    $('#modalRoot').innerHTML = `<div class="modal-back" role="dialog" aria-modal="true"><div class="modal">${html}</div></div>`;
+    const back = $('#modalRoot .modal-back');
+    back.addEventListener('click', e => { if (e.target === back || e.target.closest('[data-close]')) closeModal(); });
+    const f = back.querySelector('[data-close]'); if (f) f.focus();
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal() {
+    $('#modalRoot').innerHTML = '';
+    document.body.style.overflow = '';
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modalRoot').innerHTML) closeModal(); });
+</script>
+</body>
+</html>
