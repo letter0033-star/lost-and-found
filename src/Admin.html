@@ -157,6 +157,7 @@
     if (on) { btn._label = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> ' + (label || '처리 중…'); }
     else { btn.disabled = false; if (btn._label != null) btn.innerHTML = btn._label; }
   }
+  const ETC = '기타';   // 이 항목을 고르면 보관 장소를 직접 입력
   const pad = n => String(n).padStart(2, '0');
   function localToday() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
   function localNowInput() { const d = new Date(); return `${localToday()}T${pad(d.getHours())}:${pad(d.getMinutes())}`; }
@@ -334,7 +335,11 @@
   function formHtml(it) {
     const s = S.settings, e = !!it;
     const cats = s.categories.slice(); if (e && cats.indexOf(it.category) < 0) cats.push(it.category);
-    const locs = s.storageLocations.slice(); if (e && locs.indexOf(it.storage_location) < 0) locs.push(it.storage_location);
+    const locs = s.storageLocations.slice();
+    const hasEtc = locs.indexOf(ETC) >= 0;
+    const custom = e && locs.indexOf(it.storage_location) < 0;   // 직접 입력했던 장소
+    if (custom && !hasEtc) locs.push(it.storage_location);
+    const selLoc = custom && hasEtc ? ETC : (e ? it.storage_location : '');
     const v = (k, d) => esc(e ? it[k] : (d || ''));
     const vis = e ? it.visibility : '공개';
     return `
@@ -354,7 +359,9 @@
         <div class="field"><label>습득 날짜<span class="req">*</span></label><input class="input" type="date" name="found_date" max="${localToday()}" value="${e ? esc(it.found_date) : localToday()}"></div>
         <div class="field"><label>습득 장소<span class="req">*</span></label><input class="input" name="found_location" maxlength="60" list="dlFound" placeholder="예: 3층 복도, 운동장" value="${v('found_location')}">
           <datalist id="dlFound">${s.foundLocations.map(x => `<option value="${esc(x)}">`).join('')}</datalist></div>
-        <div class="field"><label>보관 장소<span class="req">*</span></label><select class="select" name="storage_location"><option value="">선택하세요</option>${locs.map(c => `<option ${e && it.storage_location === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>
+        <div class="field"><label>보관 장소<span class="req">*</span></label><select class="select" name="storage_location"><option value="">선택하세요</option>${locs.map(c => `<option ${selLoc === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select>
+          <input class="input ${selLoc === ETC ? '' : 'hidden'}" name="storage_etc" maxlength="30" placeholder="보관 장소 직접 입력 (예: 3학년 2반 교실)" value="${custom && hasEtc ? esc(it.storage_location) : ''}">
+          ${hasEtc ? '<span class="hint">목록에 없으면 [기타]를 고르고 직접 입력하세요.</span>' : ''}</div>
         <div class="field full"><label>물품 특징 <span class="muted small">(선택)</span></label><textarea class="textarea" name="description" maxlength="300" placeholder="색상, 모양, 브랜드, 그림 등 (이름·학년반 같은 개인정보는 적지 마세요)">${v('description')}</textarea></div>
         <div class="field"><span class="label">공개 여부<span class="req">*</span></span>
           <div class="seg"><label><input type="radio" name="visibility" value="공개" ${vis === '공개' ? 'checked' : ''}><span>공개</span></label><label><input type="radio" name="visibility" value="비공개" ${vis === '비공개' ? 'checked' : ''}><span>비공개</span></label></div>
@@ -372,6 +379,12 @@
       root.querySelector('[data-expire]').textContent = (d && p > 0) ? `습득일 기준 보관 만료일: ${addDays(d, p)} (기간이 지나도 자동 폐기되지 않습니다)` : '';
     };
     q('found_date').addEventListener('change', upd); q('storage_period').addEventListener('input', upd);
+    const etc = q('storage_etc');
+    q('storage_location').addEventListener('change', () => {
+      const on = q('storage_location').value === ETC;
+      etc.classList.toggle('hidden', !on);
+      if (on) etc.focus();
+    });
     root.querySelectorAll('[data-period]').forEach(b => b.onclick = () => { q('storage_period').value = b.dataset.period; upd(); });
     upd();
     q('photo').addEventListener('change', async ev => {
@@ -403,6 +416,12 @@
     };
     const need = [['item_name', '물품명'], ['category', '물품 분류'], ['found_date', '습득 날짜'], ['found_location', '습득 장소'], ['storage_location', '보관 장소'], ['visibility', '공개 여부'], ['storage_period', '보관 기간']];
     for (const [k, label] of need) if (!d[k]) { const el = q(k); if (el && el.focus) el.focus(); throw new Error(label + '을(를) 입력해 주세요.'); }
+    if (d.storage_location === ETC) {
+      const t = q('storage_etc').value.trim();
+      if (!t) { q('storage_etc').focus(); throw new Error('기타 보관 장소를 직접 입력해 주세요.'); }
+      d.storage_location = t;
+      d.storage_custom = true;
+    }
     if (root._image) d.image = { main: root._image.main, thumb: root._image.thumb };
     return d;
   }
@@ -449,6 +468,7 @@
       f.querySelector('[data-prev]').innerHTML = '<span>사진을<br>선택하세요</span>';
       f.querySelector('[data-photo-msg]').textContent = 'JPG·PNG 등 사진 파일. 큰 사진은 자동으로 줄여서 저장합니다.';
       f.querySelector('[name="storage_period"]').dispatchEvent(new Event('input'));
+      f.querySelector('[name="storage_location"]').dispatchEvent(new Event('change'));
     }, 0));
     f.addEventListener('submit', async e => {
       e.preventDefault();

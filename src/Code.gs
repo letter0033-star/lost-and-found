@@ -847,7 +847,8 @@ function validateItem_(d, st, prev) {
     storage_period: String(parseInt(d.storage_period, 10))
   };
   if (st.categories.indexOf(out.category) < 0 && !(prev && prev.category === out.category)) throw new Error('물품 분류를 목록에서 선택해 주세요.');
-  if (st.storageLocations.indexOf(out.storage_location) < 0 && !(prev && prev.storage_location === out.storage_location)) throw new Error('보관 장소를 목록에서 선택해 주세요.');
+  const customOk = d.storage_custom === true && st.storageLocations.indexOf('기타') >= 0;  // [기타] → 직접 입력
+  if (st.storageLocations.indexOf(out.storage_location) < 0 && !(prev && prev.storage_location === out.storage_location) && !customOk) throw new Error('보관 장소를 목록에서 선택해 주세요.');
   if (out.visibility !== VIS.PUBLIC && out.visibility !== VIS.PRIVATE) throw new Error('공개 여부를 선택해 주세요.');
   const p = parseInt(out.storage_period, 10);
   if (!(p >= 1 && p <= 3650)) throw new Error('보관 기간은 1~3650일 사이로 입력해 주세요.');
